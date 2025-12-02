@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <title>Library Manager</title>
+    <style>
+        /* Скидання та основи */
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; max-width: 900px; margin: 30px auto; padding: 20px; }
+        h1 { text-align: center; color: #1a1a1a; margin-bottom: 25px; }
+
+        /* Картки та контейнери */
+        .card { background: #ffffff; padding: 25px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); }
+        h3 { color: #333; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-bottom: 15px; }
+
+        /* Форми та елементи управління */
+        input {
+            padding: 10px 12px; margin: 8px 0; border: 1px solid #ccc; border-radius: 4px;
+            box-sizing: border-box; width: 180px; transition: border-color 0.3s ease; /* Плавний перехід */
+        }
+        input:focus { border-color: #007bff; outline: none; }
+
+        /* Кнопки */
+        button {
+            padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer;
+            font-weight: 600; margin: 5px 2px;
+            transition: background-color 0.2s ease, transform 0.1s ease; /* Плавний перехід */
+        }
+        button:hover { opacity: 0.9; }
+        button:active { transform: scale(0.98); } /* Плавніше натискання */
+
+        button.add { background-color: #28a745; color: white; }
+        button.search { background-color: #ffc107; color: #333; }
+        button.show-all { background-color: #007bff; color: white; }
+        button.del { background-color: #dc3545; color: white; }
+
+        /* Таблиця */
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td {
+            border: 1px solid #e0e0e0; padding: 12px; text-align: left;
+            background-color: #fff;
+        }
+        th { background-color: #343a40; color: white; }
+    </style>
+</head>
+<body>
+<h1>📚 Library Manager</h1>
+
+<div class="card">
+    <h3>Додати нову книгу (CRUD: CREATE)</h3>
+    <input id="title" placeholder="Назва">
+    <input id="author" placeholder="Автор">
+    <input id="year" type="number" placeholder="Рік">
+    <input id="genre" placeholder="Жанр">
+    <button class="add" onclick="addBook()">Додати</button>
+</div>
+
+<div class="card">
+    <h3>Пошук та Фільтрація</h3>
+    <input id="search" placeholder="Автор або Жанр...">
+    <button class="search" onclick="searchAuth()">Пошук автора</button>
+    <button class="search" onclick="filterGen()">Фільтр жанру</button>
+    <button class="show-all" onclick="loadBooks()">🔄 Показати всі книги (CRUD: READ)</button>
+</div>
+
+<table>
+    <thead><tr><th>Назва</th><th>Автор</th><th>Рік</th><th>Жанр</th><th>Дії</th></tr></thead>
+    <tbody id="tableBody"></tbody>
+</table>
+
+<script>
+    // JS залишається чистим і незмінним
+    const API = '/api/books';
+
+    async function loadBooks(url = API) {
+        const res = await fetch(url);
+        const data = await res.json();
+        const tbody = document.getElementById('tableBody');
+        tbody.innerHTML = '';
+        data.forEach(book => {
+            tbody.innerHTML += `<tr>
+                    <td>${book.title}</td><td>${book.author}</td><td>${book.year}</td><td>${book.genre}</td>
+                    <td><button class="del" onclick="del('${book.id}')">Видалити (CRUD: DELETE)</button></td>
+                </tr>`;
+        });
+    }
+
+    async function addBook() {
+        const book = {
+            title: document.getElementById('title').value,
+            author: document.getElementById('author').value,
+            year: document.getElementById('year').value || 0, // Запобігаємо помилці, якщо рік пустий
+            genre: document.getElementById('genre').value
+        };
+        if (!book.title || !book.author) {
+            alert('Будь ласка, заповніть Назву та Автора.');
+            return;
+        }
+        await fetch(API, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(book)});
+        loadBooks();
+        document.querySelectorAll('input').forEach(i => i.value = '');
+    }
+
+    async function del(id) {
+        if(confirm('Ви впевнені, що хочете видалити цю книгу?')) { await fetch(`${API}/${id}`, { method: 'DELETE' }); loadBooks(); }
+    }
+
+    function searchAuth() { loadBooks(`${API}/search?author=${document.getElementById('search').value}`); }
+    function filterGen() { loadBooks(`${API}/filter?genre=${document.getElementById('search').value}`); }
+
+    loadBooks(); // Завантажити при старті
+</script>
+</body>
+</html>
