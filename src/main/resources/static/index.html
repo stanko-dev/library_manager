@@ -40,6 +40,13 @@
             background-color: #fff;
         }
         th { background-color: #343a40; color: white; }
+
+        button.edit {
+            background-color: #ffc107;
+            color: #333;
+            padding: 5px 10px;
+            margin-right: 5px;
+        }
     </style>
 </head>
 <body>
@@ -51,7 +58,7 @@
     <input id="author" placeholder="Автор">
     <input id="year" type="number" placeholder="Рік">
     <input id="genre" placeholder="Жанр">
-    <button class="add" onclick="addBook()">Додати</button>
+    <button class="add" id="addButton">Додати</button>
 </div>
 
 <div class="card">
@@ -68,9 +75,10 @@
 </table>
 
 <script>
-    // JS залишається чистим і незмінним
     const API = '/api/books';
+    let editingId = null; // id книги, яку редагуємо
 
+    // Завантаження та відображення книг
     async function loadBooks(url = API) {
         const res = await fetch(url);
         const data = await res.json();
@@ -78,36 +86,87 @@
         tbody.innerHTML = '';
         data.forEach(book => {
             tbody.innerHTML += `<tr>
-                    <td>${book.title}</td><td>${book.author}</td><td>${book.year}</td><td>${book.genre}</td>
-                    <td><button class="del" onclick="del('${book.id}')">Видалити (CRUD: DELETE)</button></td>
-                </tr>`;
+                <td>${book.title}</td>
+                <td>${book.author}</td>
+                <td>${book.year}</td>
+                <td>${book.genre}</td>
+                <td>
+                    <button class="edit" onclick="startEdit('${book.id}', '${book.title}', '${book.author}', ${book.year}, '${book.genre}')">Редагувати</button>
+                    <button class="del" onclick="del('${book.id}')">Видалити</button>
+                </td>
+            </tr>`;
         });
     }
 
+    // Початок редагування — заповнює форму
+    function startEdit(id, title, author, year, genre) {
+        document.getElementById('title').value = title;
+        document.getElementById('author').value = author;
+        document.getElementById('year').value = year;
+        document.getElementById('genre').value = genre;
+        document.getElementById('addButton').textContent = 'Зберегти зміни';
+        editingId = id; // запам’ятовуємо id
+    }
+
+    // Додавання або оновлення книги
     async function addBook() {
         const book = {
             title: document.getElementById('title').value,
             author: document.getElementById('author').value,
-            year: document.getElementById('year').value || 0, // Запобігаємо помилці, якщо рік пустий
+            year: parseInt(document.getElementById('year').value) || 0,
             genre: document.getElementById('genre').value
         };
+
         if (!book.title || !book.author) {
-            alert('Будь ласка, заповніть Назву та Автора.');
+            alert('Назва та автор обов’язкові');
             return;
         }
-        await fetch(API, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(book)});
+
+        if (editingId) {
+            // UPDATE
+            await fetch(`${API}/${editingId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(book)
+            });
+            editingId = null;
+            document.getElementById('addButton').textContent = 'Додати';
+        } else {
+            // CREATE
+            await fetch(API, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(book)
+            });
+        }
+
+        clearForm();
         loadBooks();
+    }
+
+    // Очистити форму та кнопку
+    function clearForm() {
         document.querySelectorAll('input').forEach(i => i.value = '');
+        document.getElementById('addButton').textContent = 'Додати';
+        editingId = null;
     }
 
     async function del(id) {
-        if(confirm('Ви впевнені, що хочете видалити цю книгу?')) { await fetch(`${API}/${id}`, { method: 'DELETE' }); loadBooks(); }
+        if (confirm('Видалити книгу?')) {
+            await fetch(`${API}/${id}`, { method: 'DELETE' });
+            loadBooks();
+        }
     }
 
     function searchAuth() { loadBooks(`${API}/search?author=${document.getElementById('search').value}`); }
     function filterGen() { loadBooks(`${API}/filter?genre=${document.getElementById('search').value}`); }
 
-    loadBooks(); // Завантажити при старті
+    // Зміна тексту кнопки в HTML
+    document.addEventListener('DOMContentLoaded', () => {
+        document.querySelector('button.add').id = 'addButton';
+        document.querySelector('button.add').onclick = addBook;
+        loadBooks();
+    });
 </script>
 </body>
 </html>

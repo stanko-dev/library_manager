@@ -24,6 +24,13 @@ public class BookController {
         return bookService.saveBook(book);
     }
 
+    @PutMapping("/{id}")
+    public Book updateBook(@PathVariable String id, @RequestBody Book updatedBook) {
+        // MongoDB замінить весь документ, якщо id існує
+        updatedBook.setId(id);
+        return bookService.saveBook(updatedBook);
+    }
+
     @DeleteMapping("/{id}")
     public void deleteBook(@PathVariable String id) {
         bookService.deleteBook(id);
