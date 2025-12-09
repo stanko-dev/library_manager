@@ -29,6 +29,9 @@ public class BookService {
     }
 
     public List<Book> filterByGenre(String genre) {
-        return bookRepository.findByGenreIgnoreCase(genre);
+        if (genre == null || genre.trim().isEmpty()) {
+            return bookRepository.findAll();
+        }
+        return bookRepository.findByGenreRegex(genre.trim());
     }
 }

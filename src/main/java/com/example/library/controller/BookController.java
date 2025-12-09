@@ -25,10 +25,9 @@ public class BookController {
     }
 
     @PutMapping("/{id}")
-    public Book updateBook(@PathVariable String id, @RequestBody Book updatedBook) {
-        // MongoDB замінить весь документ, якщо id існує
-        updatedBook.setId(id);
-        return bookService.saveBook(updatedBook);
+    public Book updateBook(@PathVariable String id, @RequestBody Book book) {
+        book.setId(id);
+        return bookService.saveBook(book);
     }
 
     @DeleteMapping("/{id}")
@@ -38,11 +37,17 @@ public class BookController {
 
     @GetMapping("/search")
     public List<Book> searchByAuthor(@RequestParam String author) {
+        if (author == null || author.trim().isEmpty()) {
+            return bookService.getAllBooks();
+        }
         return bookService.searchByAuthor(author);
     }
 
     @GetMapping("/filter")
     public List<Book> filterByGenre(@RequestParam String genre) {
+        if (genre == null || genre.trim().isEmpty()) {
+            return bookService.getAllBooks();
+        }
         return bookService.filterByGenre(genre);
     }
 }
